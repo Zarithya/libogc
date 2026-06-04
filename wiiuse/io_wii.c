@@ -265,17 +265,18 @@ void wiiuse_sensorbar_enable(int enable)
 	__wiiuse_sensorbar_enable(enable);
 }
 
-void wiiuse_init_cmd_queue(struct wiimote_t *wm)
+int wiiuse_init_cmd_queue(struct wiimote_t *wm)
 {
 	u32 size;
 
 	if (!__queue_buffer[wm->unid]) {
 		size = (MAX_COMMANDS*sizeof(struct cmd_blk_t));
-		__queue_buffer[wm->unid] = __lwp_wkspace_allocate(size);
-		if(!__queue_buffer[wm->unid]) return;
+		__queue_buffer[wm->unid] = malloc(size);
+		if(!__queue_buffer[wm->unid]) return ERR_MEM;
 	}
 
 	__lwp_queue_initialize(&wm->cmdq,__queue_buffer[wm->unid],MAX_COMMANDS,sizeof(struct cmd_blk_t));
+	return ERR_OK;
 }
 
 int wiiuse_io_write(struct wiimote_t *wm,ubyte *buf,int len)
