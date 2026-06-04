@@ -51,7 +51,7 @@ FUNC_START PPCEarlyInitImpl, text, local
 #endif
 
 	// Start invalidating the L2 cache
-	lis   r3, L2CR_L2CE>>16
+	lis   r3, L2CR_L2I>>16
 	mtspr L2CR, r3
 
 	// Clear all BATs

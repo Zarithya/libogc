@@ -98,17 +98,24 @@ MK_NOINLINE void KThreadSwitchTo(KThread* t, PPCIrqState st)
 
 void KThreadResume(KThread* t)
 {
+	KThread* self = KThreadGetSelf();
 	PPCIrqState st = PPCIrqLockByMsr();
 
-	if (!t->suspend || (--t->suspend)) {
+	if (!t->suspend || (--t->suspend) || t->wait.queue) {
 		PPCIrqUnlockByMsr(st);
 		return;
 	}
 
-	if (!t->wait.queue) {
-		t->state = KTHR_STATE_RUNNING;
+	t->state = KTHR_STATE_RUNNING;
+
+	if (t != self) {
 		KThreadReschedule(t, st);
 	} else {
+		// We are assuming 1) PPCIsInExcpt, 2) KThreadSuspend(self) was called before, and thus 3) __ppc_next_ctx != NULL
+		if (t->prio < __ppc_next_ctx->prio) {
+			__ppc_next_ctx = NULL;
+		}
+
 		PPCIrqUnlockByMsr(st);
 	}
 }
@@ -126,10 +133,18 @@ void KThreadSuspend(KThread* t)
 	t->state = KTHR_STATE_WAITING;
 	t->wait.queue = NULL;
 
-	if (self == t) {
-		KThread* next = KThreadFindRunnable(s_firstThread);
+	KThread* next = NULL;
+	if (t == self || t == __ppc_next_ctx) {
+		next = KThreadFindRunnable(s_firstThread);
+	}
+
+	if (t == self) {
 		KThreadSwitchTo(next, st);
 	} else {
+		if (t == __ppc_next_ctx) {
+			__ppc_next_ctx = next != self ? next : NULL;
+		}
+
 		PPCIrqUnlockByMsr(st);
 	}
 }
@@ -174,7 +189,7 @@ void KThreadYield(void)
 	PPCIrqState st = PPCIrqLockByMsr();
 
 	KThread* t = KThreadFindRunnable(self->next);
-	if (t->prio > self->prio) {
+	if (!t || t->prio > self->prio) {
 		t = KThreadFindRunnable(s_firstThread);
 	}
 
