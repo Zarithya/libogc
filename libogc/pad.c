@@ -391,7 +391,7 @@ static void __pad_typeandstatuscallback(s32 chan,u32 type)
 		return;
 	}
 
-	if(!(type&SI_GC_WIRELESS) || type&SI_WIRELESS_IR) {
+	if(!(type&SI_GC_FEATURE_WIRELESS) || type&SI_WIRELESS_IR) {
 		if(recal_bits) ret = SI_Transfer(__pad_resettingchan,&__pad_cmdcalibrate,3,__pad_origin[__pad_resettingchan],10,__pad_origincallback,0);
 		else ret = SI_Transfer(__pad_resettingchan,&__pad_cmdreadorigin,1,__pad_origin[__pad_resettingchan],10,__pad_origincallback,0);
 	} else if(type&SI_WIRELESS_FIX_ID && !(type&SI_WIRELESS_CONT_MASK) && !(type&SI_WIRELESS_LITE)) {
@@ -417,7 +417,7 @@ static void __pad_receivecheckcallback(s32 chan,u32 type)
 		__pad_waitingbits &= ~mask;
 		__pad_checkingbits &= ~mask;
 		if(!(tmp&0x0f)
-			&& (type&SI_GC_WIRELESS) && (type&SI_WIRELESS_RECEIVED) && (type&SI_WIRELESS_FIX_ID)
+			&& (type&SI_GC_FEATURE_WIRELESS) && (type&SI_WIRELESS_RECEIVED) && (type&SI_WIRELESS_FIX_ID)
 			&& !(type&SI_WIRELESS_IR) && !(type&SI_WIRELESS_CONT_MASK) && !(type&SI_WIRELESS_LITE))  SI_Transfer(chan,&__pad_cmdreadorigin,1,__pad_origin[chan],10,__pad_originupdatecallback,0);
 		else __pad_disable(chan);
 	}
@@ -687,7 +687,7 @@ void PAD_ControlMotor(s32 chan,u32 cmd)
 	mask = PAD_ENABLEDMASK(chan);
 	if(__pad_enabledbits&mask) {
 		type = SI_GetType(chan);
-		if(!(type&SI_GC_NOMOTOR) && !(type&SI_GC_KEYBOARD)) {
+		if(!(type&SI_GC_FEATURE_NOMOTOR)) {
 			if(__pad_spec<2 && cmd==PAD_MOTOR_STOP_HARD) cmd = 0;
 
 			cmd = 0x00400000|__pad_analogmode|(cmd&0x03);
