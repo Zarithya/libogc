@@ -54,6 +54,32 @@ static __inline__ void __wiiuse_push_command(struct wiimote_t *wm,struct cmd_blk
 	_CPU_ISR_Restore(level);
 }
 
+void wiiuse_cleanup(struct wiimote_t **wm, int wiimotes)
+{
+	int i = 0;
+
+	if (!wm)
+		return;
+	
+	for (; i < wiimotes; ++i) {
+		if (wm[i]) {
+			if (wm[i]->queue_buffer) {
+				free(wm[i]->queue_buffer);
+				wm[i]->queue_buffer = NULL;
+			}
+
+			if (wm[i]->sock) {
+				bte_free(wm[i]->sock);
+				wm[i]->sock = NULL;
+			}
+
+			free(wm[i]);
+		}
+	}
+
+	free(wm);
+}
+
 #ifndef GEKKO
 struct wiimote_t** wiiuse_init(int wiimotes) {
 #else
